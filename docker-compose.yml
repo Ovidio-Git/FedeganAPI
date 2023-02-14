@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+
+  app:
+    build: .
+    restart: always
+    container_name: App_v1
+    depends_on:
+      - db
+    volumes:
+      - ./app:/code/app
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+    networks:
+      dbconnection:
+        ipv4_address: 10.5.0.5
+
+  db:
+    image: postgres:15-alpine
+    restart: always
+    container_name: PostgreSQL_v15
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=databaseName
+    networks:
+      dbconnection:
+        ipv4_address: 10.5.0.6
+
+
+networks:
+  dbconnection:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.5.0.0/16
+         gateway: 10.5.0.1
