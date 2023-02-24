@@ -8,11 +8,11 @@ CREATE TABLE Parametros (
 
 CREATE TABLE produccionesLecheSacrificio006 (
   Anio INTEGER,
-  Sacrificio_Bovino_milesxcab DOUBLE PRECISION,
-  Produccion_carne_Ton DOUBLE PRECISION,
+  Sacrificio_Bovino_milesxcab INTEGER,
+  Produccion_carne_Ton INTEGER,
   Tasa_extraccion_porcentage	DOUBLE PRECISION,
-  Produccion_leche_cruda_millonesxlts DOUBLE PRECISION,
-  Acopio_Industrial_millonesxlts DOUBLE PRECISION
+  Produccion_leche_cruda_millonesxlts INTEGER,
+  Acopio_Industrial_millonesxlts INTEGER
 );
 
 CREATE TABLE precioUSDNovilloGordoPie014 (
@@ -85,7 +85,7 @@ CREATE TABLE hembrasEnSacificio052 (
 
 CREATE TABLE ganadoGordoEnPie053 (
   Fecha DATE,
-  Precio_x_kilo DOUBLE PRECISION
+  Precio_x_kilo INTEGER
 );
 
 CREATE TABLE hembrasFlacaEnpie065 (
