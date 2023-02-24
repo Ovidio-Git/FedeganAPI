@@ -5,7 +5,7 @@ services:
   app:
     build: .
     restart: always
-    container_name: App_v1
+    container_name: App_v2
     depends_on:
       - db
     volumes:
@@ -23,9 +23,9 @@ services:
     restart: always
     container_name: PostgreSQL_v15
     volumes:
-       - ./dataDB:/var/lib/postgresql/data
+       - ./dataDB/Volumen:/var/lib/postgresql/data
     ports:
-      - "8000:5432"
+      - "5432:5432"
     environment:
       - POSTGRES_USER=root
       - POSTGRES_PASSWORD=passwordRoot
