@@ -22,6 +22,8 @@ services:
     image: postgres:15-alpine
     restart: always
     container_name: PostgreSQL_v15
+    volumes:
+       - ./dataDB:/var/lib/postgresql/data
     ports:
       - "8000:5432"
     environment:
