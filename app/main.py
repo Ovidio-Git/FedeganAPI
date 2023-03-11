@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from fastapi import Query
 from fastapi import Path
 from .database import SessionLocal
+from .warehouse import jsonResponseStructure
 from .models import ProduccionLecheSacrificio
 from .models import PrecioUSDnovilloGordopie
 from .models import PrecioLecheCrudaUSDxL
@@ -31,7 +32,6 @@ from .baseModels import hembrasEnSacrificioBModel
 from .baseModels import ganadoGordoEnpieBModel
 from .baseModels import hembrasFlacaEnpieBModel
 from .baseModels import machoCebaGordopieBModel
-from .warehouse import jsonResponseStructure
 
 app = FastAPI()
 
@@ -41,8 +41,8 @@ def home():
     return jsonResponseStructure(status="success",code=200,message="Welcome to FedeganAPI")
 
 
-## ## ## ## produccioneslechesacrificio006  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
 
+## ## ## ## produccioneslechesacrificio006  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
 @app.get("/api/produccionLecheSacrificio")
 def getAllProduccionLecheSacrificio():
     db = SessionLocal()
@@ -121,11 +121,9 @@ def deleteByIdProduccionLecheSacrificio(idData:int = Path(default=None,ge=1,desc
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 
 ## ## ## ## preciousdnovillogordopie014  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/precioUSDnovilloGordopie")
 def getAllPrecioUSDnovilloGordopie():
     db = SessionLocal()
@@ -198,11 +196,9 @@ def deleteByIdPrecioUSDnovilloGordopie(idData:int = Path(default=None,ge=1,descr
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
 
 ## ## ## ## PrecioLecheCrudaUSDxL  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/precioLecheCrudaUSDxL")
 def getAllPrecioLecheCrudaUSDxL():
     db = SessionLocal()
@@ -291,10 +287,9 @@ def deleteByIdPrecioLecheCrudaUSDxL(idData:int = Path(default=None,ge=1,descript
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 ## ## ## ## Costosproduccion  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/costosproduccion")
 def getAllCostosproduccion():
     db = SessionLocal()
@@ -367,10 +362,9 @@ def deleteByIdCostosproduccion(idData:int = Path(default=None,ge=1,description="
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 ## ## ## ## ConsumosAnualCarne  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/consumosAnualCarne")
 def getAllConsumosAnualCarne():
     db = SessionLocal()
@@ -451,10 +445,9 @@ def deleteByIdConsumosAnualCarne(idData:int = Path(default=None,ge=1,description
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 ## ## ## ## ConsumosAnualesLeche  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/consumosAnualesLeche")
 def getAllConsumosAnualesLeche():
     db = SessionLocal()
@@ -525,10 +518,9 @@ def deleteByIdConsumosAnualesLeche(idData:int = Path(default=None,ge=1,descripti
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 ## ## ## ## LitroLechepagado  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/litroLechepagado")
 def getAllLitroLechepagado():
     db = SessionLocal()
@@ -601,10 +593,9 @@ def deleteByIdLitroLechepagado(idData:int = Path(default=None,ge=1,description="
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 ## ## ## ## ProduccionCarne  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/produccionCarne")
 def getAllProduccionCarne():
     db = SessionLocal()
@@ -675,10 +666,9 @@ def deleteByIdProduccionCarne(idData:int = Path(default=None,ge=1,description="T
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 ## ## ## ## ProduccionAcopioLeche  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/produccionAcopioLeche")
 def getAllProduccionAcopioLeche():
     db = SessionLocal()
@@ -751,10 +741,9 @@ def deleteByIdProduccionAcopioLeche(idData:int = Path(default=None,ge=1,descript
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 ## ## ## ## SacrificioMensualBovino  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/sacrificioMensualBovino")
 def getAllSacrificioMensualBovino():
     db = SessionLocal()
@@ -825,10 +814,9 @@ def deleteByIdSacrificioMensualBovino(idData:int = Path(default=None,ge=1,descri
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 ## ## ## ## HembrasEnSacrificio  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/hembrasEnSacrificio")
 def getAllHembrasEnSacrificio():
     db = SessionLocal()
@@ -899,10 +887,9 @@ def deleteByIdHembrasEnSacrificio(idData:int = Path(default=None,ge=1,descriptio
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 ## ## ## ## GanadoGordoEnpie  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/ganadoGordoEnpie")
 def getAllGanadoGordoEnpie():
     db = SessionLocal()
@@ -973,10 +960,9 @@ def deleteByIdGanadoGordoEnpie(idData:int = Path(default=None,ge=1,description="
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 ## ## ## ## HembrasFlacaEnpie  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/hembrasFlacaEnpie")
 def getAllHembrasFlacaEnpie():
     db = SessionLocal()
@@ -1051,10 +1037,9 @@ def deleteByIdHembrasFlacaEnpie(idData:int = Path(default=None,ge=1,description=
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
+
 
 ## ## ## ## MachoCebaGordopie  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
-
 @app.get("/api/machoCebaGordopie")
 def getAllMachoCebaGordopie():
     db = SessionLocal()
@@ -1129,5 +1114,4 @@ def deleteByIdMachoCebaGordopie(idData:int = Path(default=None,ge=1,description=
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
-## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## 
 
