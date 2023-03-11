@@ -87,8 +87,8 @@ class LitroLechepagado(Base):
     precio_por_litro_nacional = Column(Float)
     estado = Column(Boolean)
 
-
-class produccionCarne(Base):
+#
+class ProduccionCarne(Base):
     __tablename__ = "producionescarne048"
     id = Column(Integer, primary_key=True, index=True)
     anio = Column(Integer)
@@ -96,7 +96,7 @@ class produccionCarne(Base):
     estado = Column(Boolean)
 
 
-class produccionAcopioLeche(Base):
+class ProduccionAcopioLeche(Base):
     __tablename__ = "produccionacopioleche050"
     id = Column(Integer, primary_key=True, index=True)
     anio = Column(Integer)
