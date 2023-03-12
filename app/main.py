@@ -123,6 +123,7 @@ def deleteByIdProduccionLecheSacrificio(idData:int = Path(default=None,ge=1,desc
 
 
 
+
 ## ## ## ## preciousdnovillogordopie014  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
 @app.get("/api/precioUSDnovilloGordopie")
 def getAllPrecioUSDnovilloGordopie():
@@ -195,6 +196,7 @@ def deleteByIdPrecioUSDnovilloGordopie(idData:int = Path(default=None,ge=1,descr
     db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
+
 
 
 
@@ -289,6 +291,7 @@ def deleteByIdPrecioLecheCrudaUSDxL(idData:int = Path(default=None,ge=1,descript
 
 
 
+
 ## ## ## ## Costosproduccion  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
 @app.get("/api/costosproduccion")
 def getAllCostosproduccion():
@@ -361,6 +364,7 @@ def deleteByIdCostosproduccion(idData:int = Path(default=None,ge=1,description="
     db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
+
 
 
 
@@ -447,6 +451,7 @@ def deleteByIdConsumosAnualCarne(idData:int = Path(default=None,ge=1,description
 
 
 
+
 ## ## ## ## ConsumosAnualesLeche  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
 @app.get("/api/consumosAnualesLeche")
 def getAllConsumosAnualesLeche():
@@ -517,6 +522,7 @@ def deleteByIdConsumosAnualesLeche(idData:int = Path(default=None,ge=1,descripti
     db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
+
 
 
 
@@ -595,6 +601,7 @@ def deleteByIdLitroLechepagado(idData:int = Path(default=None,ge=1,description="
 
 
 
+
 ## ## ## ## ProduccionCarne  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
 @app.get("/api/produccionCarne")
 def getAllProduccionCarne():
@@ -665,6 +672,7 @@ def deleteByIdProduccionCarne(idData:int = Path(default=None,ge=1,description="T
     db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
+
 
 
 
@@ -743,6 +751,7 @@ def deleteByIdProduccionAcopioLeche(idData:int = Path(default=None,ge=1,descript
 
 
 
+
 ## ## ## ## SacrificioMensualBovino  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
 @app.get("/api/sacrificioMensualBovino")
 def getAllSacrificioMensualBovino():
@@ -813,6 +822,7 @@ def deleteByIdSacrificioMensualBovino(idData:int = Path(default=None,ge=1,descri
     db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
+
 
 
 
@@ -889,6 +899,7 @@ def deleteByIdHembrasEnSacrificio(idData:int = Path(default=None,ge=1,descriptio
 
 
 
+
 ## ## ## ## GanadoGordoEnpie  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
 @app.get("/api/ganadoGordoEnpie")
 def getAllGanadoGordoEnpie():
@@ -959,6 +970,7 @@ def deleteByIdGanadoGordoEnpie(idData:int = Path(default=None,ge=1,description="
     db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
+
 
 
 
@@ -1036,6 +1048,7 @@ def deleteByIdHembrasFlacaEnpie(idData:int = Path(default=None,ge=1,description=
     db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
+
 
 
 
