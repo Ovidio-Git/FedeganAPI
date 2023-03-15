@@ -4,6 +4,16 @@ from datetime import date
 from typing import Optional
 
 
+class usersBModel(BaseModel):
+    username:str = Field(min_length=1, max_length=100,example="lesterT")
+    fullname: str = Field(min_length=1, max_length=150,example="Lester terster linux")
+    email: str = Field(min_length=1, max_length=150,example="lester@gmail.com",include="@")
+    password: str = Field(min_length=1, max_length=20,example="lester24")
+
+class authBModel(BaseModel):
+    username:str = Field(min_length=1, max_length=100,example="lesterT")
+    password: str = Field(min_length=1, max_length=20,example="lester24")
+
 class parametroBModel(BaseModel):
     idparametro: Optional[int]= Field(default=None,ge=1)
     nombreparametro: str = Field(min_length=1, max_length=150)

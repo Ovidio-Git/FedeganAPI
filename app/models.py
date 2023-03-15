@@ -1,6 +1,16 @@
 from sqlalchemy import Column, Integer, String, Float, Date,Boolean
 from .database import Base
 
+class Users(Base):
+    __tablename__ = "users"
+    id = Column(Integer)
+    username = Column(String(100), primary_key=True, index=True)
+    fullname = Column(String(150))
+    email = Column(String(150))
+    passwordhash = Column(String(500))
+    statususer = Column(Boolean)
+
+
 class Parametro(Base):
     __tablename__ = "parametros"
     idparametro = Column(Integer, primary_key=True, index=True)

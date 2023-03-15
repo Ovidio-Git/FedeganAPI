@@ -3,7 +3,7 @@ CREATE TABLE users (
   username VARCHAR(100),
   fullName VARCHAR(150),
   email VARCHAR(150),
-  passwordHash VARCHAR(200),
+  passwordHash VARCHAR(500),
   statusUser BOOLEAN DEFAULT TRUE
 );
 

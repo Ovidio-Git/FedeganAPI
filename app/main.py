@@ -4,6 +4,9 @@ from fastapi import Query
 from fastapi import Path
 from .database import SessionLocal
 from .warehouse import jsonResponseStructure
+from .warehouse import generateJwtToken
+from .warehouse import convertPasswordToHash
+from .warehouse import validatePassword
 from .models import ProduccionLecheSacrificio
 from .models import PrecioUSDnovilloGordopie
 from .models import PrecioLecheCrudaUSDxL
@@ -18,6 +21,7 @@ from .models import HembrasEnSacrificio
 from .models import GanadoGordoEnpie
 from .models import HembrasFlacaEnpie
 from .models import MachoCebaGordopie
+from .models import Users
 from .baseModels import produccionLecheSacrificioBModel
 from .baseModels import precioUSDnovilloGordopieBModel
 from .baseModels import precioLecheCrudaUSDxLBModel
@@ -32,14 +36,60 @@ from .baseModels import hembrasEnSacrificioBModel
 from .baseModels import ganadoGordoEnpieBModel
 from .baseModels import hembrasFlacaEnpieBModel
 from .baseModels import machoCebaGordopieBModel
+from .baseModels import usersBModel
+from .baseModels import authBModel
+from sqlalchemy import text
+
+
 
 app = FastAPI()
 
 
 @app.get("/")
-def home():
+def home()->str:
     return jsonResponseStructure(status="success",code=200,message="Welcome to FedeganAPI")
 
+@app.post("/api/registrarUser/")
+def postProduccionLecheSacrificio(data:usersBModel):
+    db = SessionLocal()
+    queryResult = db.query(Users).filter(Users.username==data.username).all()
+    sql = text('SELECT MAX(id) FROM users')
+    max_value = db.execute(sql).scalar()
+    if max_value is None:
+        max_value=1
+    else:
+        max_value=max_value+1
+    if len(queryResult)==0:
+        dataTarget = Users( id = max_value,
+                            username=data.username,
+                            fullname=data.fullname,
+                            email=data.email,
+                            passwordhash=convertPasswordToHash(data.password),
+                            statususer=True)
+        db.add(dataTarget)
+        db.commit()
+        db.refresh(dataTarget)
+        db.close()
+        return jsonResponseStructure(status="success",code=200,data=dataTarget,message="User created successfully")
+    else: 
+        return jsonResponseStructure(status="error",code=409,message="Username already exists, try with a different username")
+
+
+@app.post("/api/token/")
+def postToken(data:authBModel):
+    db = SessionLocal()
+    queryResult = db.query(Users).get(data.username)
+    db.close()
+    if queryResult:
+        passHash = queryResult.passwordhash
+        passUSer = data.password
+        if validatePassword(passHash,passUSer):
+            token = generateJwtToken(data.username)
+            return jsonResponseStructure(status="success",code=200,data=token,message="Token created successfully")
+        else:
+            return jsonResponseStructure(status="error",code=401,message="The password you entered is incorrect, try again")
+    else: 
+        return jsonResponseStructure(status="error",code=404,message="Username not found")
 
 
 ## ## ## ## produccioneslechesacrificio006  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
