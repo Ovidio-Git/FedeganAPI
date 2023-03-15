@@ -1,12 +1,19 @@
+from jose import jwt
+from jose import JWTError
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Query
 from fastapi import Path
+from fastapi import Depends
+from fastapi import status
+from fastapi.security import OAuth2PasswordBearer
 from .database import SessionLocal
 from .warehouse import jsonResponseStructure
 from .warehouse import generateJwtToken
 from .warehouse import convertPasswordToHash
 from .warehouse import validatePassword
+from .warehouse import SECRET_KEY
+from .warehouse import ALGORITHM
 from .models import ProduccionLecheSacrificio
 from .models import PrecioUSDnovilloGordopie
 from .models import PrecioLecheCrudaUSDxL
@@ -22,6 +29,7 @@ from .models import GanadoGordoEnpie
 from .models import HembrasFlacaEnpie
 from .models import MachoCebaGordopie
 from .models import Users
+from sqlalchemy import text
 from .baseModels import produccionLecheSacrificioBModel
 from .baseModels import precioUSDnovilloGordopieBModel
 from .baseModels import precioLecheCrudaUSDxLBModel
@@ -38,11 +46,38 @@ from .baseModels import hembrasFlacaEnpieBModel
 from .baseModels import machoCebaGordopieBModel
 from .baseModels import usersBModel
 from .baseModels import authBModel
-from sqlalchemy import text
 
 
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token/")
 
 app = FastAPI()
+
+
+
+async def getTokenData(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=jsonResponseStructure(status="error",code=409,message=f"Could not validate credentials"),
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(payload)
+        username: str = payload.get("username")
+        if username is None:
+            raise credentials_exception
+        else:
+            db = SessionLocal()
+            queryResult = db.query(Users).filter(Users.username==username).filter(Users.statususer==True).all()
+            if len(queryResult)>0:
+                return username
+            else:
+                raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
 
 
 @app.get("/")
@@ -72,7 +107,8 @@ def postProduccionLecheSacrificio(data:usersBModel):
         db.close()
         return jsonResponseStructure(status="success",code=200,data=dataTarget,message="User created successfully")
     else: 
-        return jsonResponseStructure(status="error",code=409,message="Username already exists, try with a different username")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                detail=jsonResponseStructure(status="error",code=409,message=f"Username already exists, try with a different username"))
 
 
 @app.post("/api/token/")
@@ -81,15 +117,23 @@ def postToken(data:authBModel):
     queryResult = db.query(Users).get(data.username)
     db.close()
     if queryResult:
-        passHash = queryResult.passwordhash
-        passUSer = data.password
-        if validatePassword(passHash,passUSer):
-            token = generateJwtToken(data.username)
-            return jsonResponseStructure(status="success",code=200,data=token,message="Token created successfully")
+        if queryResult.statususer:
+            passHash = queryResult.passwordhash
+            passUSer = data.password
+            if validatePassword(passHash,passUSer):
+                token = generateJwtToken(data.username)
+                return jsonResponseStructure(status="success",code=200,data=token,message="Token created successfully")
+            else:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail=jsonResponseStructure(status="error",code=401,message="The password you entered is incorrect, try again"))
         else:
-            return jsonResponseStructure(status="error",code=401,message="The password you entered is incorrect, try again")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=jsonResponseStructure(status="error",code=401,message=f"The username '{data.username}' are disabled"))
     else: 
-        return jsonResponseStructure(status="error",code=404,message="Username not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail=jsonResponseStructure(status="error",code=404,message="Username not found"))
+
+
 
 
 ## ## ## ## produccioneslechesacrificio006  ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##   
@@ -106,7 +150,7 @@ def getByParametersProduccionLecheSacrificio(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(ProduccionLecheSacrificio).filter(ProduccionLecheSacrificio.id.between(minLimit,maxLimit)).filter(ProduccionLecheSacrificio.estado==True).all()
     db.close()
@@ -123,7 +167,7 @@ def getByIdProduccionLecheSacrificio(idData:int = Path(default=1,ge=1,descriptio
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/produccionLecheSacrificio/")
-def postProduccionLecheSacrificio(data:produccionLecheSacrificioBModel):
+def postProduccionLecheSacrificio(data:produccionLecheSacrificioBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = ProduccionLecheSacrificio(id=data.id,
                                             anio=data.anio,
@@ -141,11 +185,11 @@ def postProduccionLecheSacrificio(data:produccionLecheSacrificioBModel):
 
 
 @app.put("/api/produccionLecheSacrificio/{idData}")
-def putByIdProduccionLecheSacrificio(data:produccionLecheSacrificioBModel,idData:int = Path(default=1,ge=1,description="This is the ProduccionLecheSacrificio ID",example=1)):
+def putByIdProduccionLecheSacrificio(data:produccionLecheSacrificioBModel,idData:int = Path(default=1,ge=1,description="This is the ProduccionLecheSacrificio ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(ProduccionLecheSacrificio).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.anio=data.anio
     queryResult.sacrificio_bovino_milesxcab=data.sacrificio_bovino_milesxcab
@@ -160,11 +204,11 @@ def putByIdProduccionLecheSacrificio(data:produccionLecheSacrificioBModel,idData
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/produccionLecheSacrificio/{idData}")
-def deleteByIdProduccionLecheSacrificio(idData:int = Path(default=None,ge=1,description="This is the ProduccionLecheSacrificio ID",example=1)):
+def deleteByIdProduccionLecheSacrificio(idData:int = Path(default=None,ge=1,description="This is the ProduccionLecheSacrificio ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(ProduccionLecheSacrificio).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -188,7 +232,7 @@ def getByParametersPrecioUSDnovilloGordopie(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(PrecioUSDnovilloGordopie).filter(PrecioUSDnovilloGordopie.id.between(minLimit,maxLimit)).filter(PrecioUSDnovilloGordopie.estado==True).all()
     db.close()
@@ -205,7 +249,7 @@ def getByIdPrecioUSDnovilloGordopie(idData:int = Path(default=1,ge=1,description
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/precioUSDnovilloGordopie/")
-def postPrecioUSDnovilloGordopie(data:precioUSDnovilloGordopieBModel):
+def postPrecioUSDnovilloGordopie(data:precioUSDnovilloGordopieBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = PrecioUSDnovilloGordopie(id=data.id,
                                             pais=data.pais,
@@ -220,11 +264,11 @@ def postPrecioUSDnovilloGordopie(data:precioUSDnovilloGordopieBModel):
 
 
 @app.put("/api/precioUSDnovilloGordopie/{idData}")
-def putByIdPrecioUSDnovilloGordopie(data:precioUSDnovilloGordopieBModel,idData:int = Path(default=1,ge=1,description="This is the PrecioUSDnovilloGordopie ID",example=1)):
+def putByIdPrecioUSDnovilloGordopie(data:precioUSDnovilloGordopieBModel,idData:int = Path(default=1,ge=1,description="This is the PrecioUSDnovilloGordopie ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(PrecioUSDnovilloGordopie).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.pais=data.pais
     queryResult.fecha=data.fecha
@@ -236,11 +280,11 @@ def putByIdPrecioUSDnovilloGordopie(data:precioUSDnovilloGordopieBModel,idData:i
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/precioUSDnovilloGordopie/{idData}")
-def deleteByIdPrecioUSDnovilloGordopie(idData:int = Path(default=None,ge=1,description="This is the PrecioUSDnovilloGordopie ID",example=1)):
+def deleteByIdPrecioUSDnovilloGordopie(idData:int = Path(default=None,ge=1,description="This is the PrecioUSDnovilloGordopie ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(PrecioUSDnovilloGordopie).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -264,7 +308,7 @@ def getByParametersPrecioLecheCrudaUSDxL(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(PrecioLecheCrudaUSDxL).filter(PrecioLecheCrudaUSDxL.id.between(minLimit,maxLimit)).filter(PrecioLecheCrudaUSDxL.estado==True).all()
     db.close()
@@ -281,7 +325,7 @@ def getByIdPrecioLecheCrudaUSDxL(idData:int = Path(default=1,ge=1,description="T
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/precioLecheCrudaUSDxL/")
-def postPrecioLecheCrudaUSDxL(data:precioLecheCrudaUSDxLBModel):
+def postPrecioLecheCrudaUSDxL(data:precioLecheCrudaUSDxLBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = PrecioLecheCrudaUSDxL(id=data.id,
                                         fecha=data.fecha,
@@ -304,11 +348,11 @@ def postPrecioLecheCrudaUSDxL(data:precioLecheCrudaUSDxLBModel):
 
 
 @app.put("/api/precioLecheCrudaUSDxL/{idData}")
-def putByIdPrecioLecheCrudaUSDxL(data:precioLecheCrudaUSDxLBModel,idData:int = Path(default=1,ge=1,description="This is the PrecioLecheCrudaUSDxL ID",example=1)):
+def putByIdPrecioLecheCrudaUSDxL(data:precioLecheCrudaUSDxLBModel,idData:int = Path(default=1,ge=1,description="This is the PrecioLecheCrudaUSDxL ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(PrecioLecheCrudaUSDxL).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.fecha=data.fecha
     queryResult.argentina=data.argentina
@@ -328,11 +372,11 @@ def putByIdPrecioLecheCrudaUSDxL(data:precioLecheCrudaUSDxLBModel,idData:int = P
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/precioLecheCrudaUSDxL/{idData}")
-def deleteByIdPrecioLecheCrudaUSDxL(idData:int = Path(default=None,ge=1,description="This is the PrecioLecheCrudaUSDxL ID",example=1)):
+def deleteByIdPrecioLecheCrudaUSDxL(idData:int = Path(default=None,ge=1,description="This is the PrecioLecheCrudaUSDxL ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(PrecioLecheCrudaUSDxL).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -356,7 +400,7 @@ def getByParametersCostosproduccion(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(Costosproduccion).filter(Costosproduccion.id.between(minLimit,maxLimit)).filter(Costosproduccion.estado==True).all()
     db.close()
@@ -373,7 +417,7 @@ def getByIdCostosproduccion(idData:int = Path(default=1,ge=1,description="This i
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/costosproduccion/")
-def postCostosproduccion(data:costosproduccionBModel):
+def postCostosproduccion(data:costosproduccionBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = Costosproduccion(id=data.id,
                                     indice=data.indice,
@@ -388,11 +432,11 @@ def postCostosproduccion(data:costosproduccionBModel):
 
 
 @app.put("/api/costosproduccion/{idData}")
-def putByIdCostosproduccion(data:costosproduccionBModel,idData:int = Path(default=1,ge=1,description="This is the Costosproduccion ID",example=1)):
+def putByIdCostosproduccion(data:costosproduccionBModel,idData:int = Path(default=1,ge=1,description="This is the Costosproduccion ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(Costosproduccion).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.indice=data.indice
     queryResult.anio=data.anio
@@ -404,11 +448,11 @@ def putByIdCostosproduccion(data:costosproduccionBModel,idData:int = Path(defaul
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/costosproduccion/{idData}")
-def deleteByIdCostosproduccion(idData:int = Path(default=None,ge=1,description="This is the Costosproduccion ID",example=1)):
+def deleteByIdCostosproduccion(idData:int = Path(default=None,ge=1,description="This is the Costosproduccion ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(Costosproduccion).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -432,7 +476,7 @@ def getByParametersConsumosAnualCarne(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(ConsumosAnualCarne).filter(ConsumosAnualCarne.id.between(minLimit,maxLimit)).filter(ConsumosAnualCarne.estado==True).all()
     db.close()
@@ -449,7 +493,7 @@ def getByIdConsumosAnualCarne(idData:int = Path(default=1,ge=1,description="This
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/consumosAnualCarne/")
-def postConsumosAnualCarne(data:consumosAnualCarneBModel):
+def postConsumosAnualCarne(data:consumosAnualCarneBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = ConsumosAnualCarne(id=data.id,
                                     anio=data.anio,
@@ -468,11 +512,11 @@ def postConsumosAnualCarne(data:consumosAnualCarneBModel):
 
 
 @app.put("/api/consumosAnualCarne/{idData}")
-def putByIdConsumosAnualCarne(data:consumosAnualCarneBModel,idData:int = Path(default=1,ge=1,description="This is the ConsumosAnualCarne ID",example=1)):
+def putByIdConsumosAnualCarne(data:consumosAnualCarneBModel,idData:int = Path(default=1,ge=1,description="This is the ConsumosAnualCarne ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(ConsumosAnualCarne).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.anio=data.anio,
     queryResult.consumo_proteina_animal=data.consumo_proteina_animal
@@ -488,11 +532,11 @@ def putByIdConsumosAnualCarne(data:consumosAnualCarneBModel,idData:int = Path(de
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/consumosAnualCarne/{idData}")
-def deleteByIdConsumosAnualCarne(idData:int = Path(default=None,ge=1,description="This is the ConsumosAnualCarne ID",example=1)):
+def deleteByIdConsumosAnualCarne(idData:int = Path(default=None,ge=1,description="This is the ConsumosAnualCarne ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(ConsumosAnualCarne).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -516,7 +560,7 @@ def getByParametersConsumosAnualesLeche(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(ConsumosAnualesLeche).filter(ConsumosAnualesLeche.id.between(minLimit,maxLimit)).filter(ConsumosAnualesLeche.estado==True).all()
     db.close()
@@ -533,7 +577,7 @@ def getByIdConsumosAnualesLeche(idData:int = Path(default=1,ge=1,description="Th
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/consumosAnualesLeche/")
-def postConsumosAnualesLeche(data:consumosAnualesLecheBModel):
+def postConsumosAnualesLeche(data:consumosAnualesLecheBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = ConsumosAnualesLeche(id=data.id,
                                     anio=data.anio,
@@ -547,11 +591,11 @@ def postConsumosAnualesLeche(data:consumosAnualesLecheBModel):
 
 
 @app.put("/api/consumosAnualesLeche/{idData}")
-def putByIdConsumosAnualesLeche(data:consumosAnualesLecheBModel,idData:int = Path(default=1,ge=1,description="This is the ConsumosAnualesLeche ID",example=1)):
+def putByIdConsumosAnualesLeche(data:consumosAnualesLecheBModel,idData:int = Path(default=1,ge=1,description="This is the ConsumosAnualesLeche ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(ConsumosAnualesLeche).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.anio=data.anio
     queryResult.leche_ltxhab=data.consumo_proteina_animal
@@ -562,11 +606,11 @@ def putByIdConsumosAnualesLeche(data:consumosAnualesLecheBModel,idData:int = Pat
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/consumosAnualesLeche/{idData}")
-def deleteByIdConsumosAnualesLeche(idData:int = Path(default=None,ge=1,description="This is the ConsumosAnualesLeche ID",example=1)):
+def deleteByIdConsumosAnualesLeche(idData:int = Path(default=None,ge=1,description="This is the ConsumosAnualesLeche ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(ConsumosAnualesLeche).get(idData)
     if queryResult is None: 
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -590,7 +634,7 @@ def getByParametersLitroLechepagado(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(LitroLechepagado).filter(LitroLechepagado.id.between(minLimit,maxLimit)).filter(LitroLechepagado.estado==True).all()
     db.close()
@@ -607,7 +651,7 @@ def getByIdLitroLechepagado(idData:int = Path(default=1,ge=1,description="This i
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/litroLechepagado/")
-def postLitroLechepagado(data:litroLechepagadoBModel):
+def postLitroLechepagado(data:litroLechepagadoBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = LitroLechepagado(id=data.id,
                                     bonificacion=data.bonificacion,
@@ -622,11 +666,11 @@ def postLitroLechepagado(data:litroLechepagadoBModel):
 
 
 @app.put("/api/litroLechepagado/{idData}")
-def putByIdLitroLechepagado(data:litroLechepagadoBModel,idData:int = Path(default=1,ge=1,description="This is the LitroLechepagado ID",example=1)):
+def putByIdLitroLechepagado(data:litroLechepagadoBModel,idData:int = Path(default=1,ge=1,description="This is the LitroLechepagado ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(LitroLechepagado).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.bonificacion=data.bonificacion
     queryResult.fecha=data.fecha
@@ -638,11 +682,11 @@ def putByIdLitroLechepagado(data:litroLechepagadoBModel,idData:int = Path(defaul
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/litroLechepagado/{idData}")
-def deleteByIdLitroLechepagado(idData:int = Path(default=None,ge=1,description="This is the LitroLechepagado ID",example=1)):
+def deleteByIdLitroLechepagado(idData:int = Path(default=None,ge=1,description="This is the LitroLechepagado ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(LitroLechepagado).get(idData)
     if queryResult is None: 
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -666,7 +710,7 @@ def getByParametersProduccionCarne(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(ProduccionCarne).filter(ProduccionCarne.id.between(minLimit,maxLimit)).filter(ProduccionCarne.estado==True).all()
     db.close()
@@ -683,7 +727,7 @@ def getByIdProduccionCarne(idData:int = Path(default=1,ge=1,description="This is
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/produccionCarne/")
-def postProduccionCarne(data:produccionCarneBModel):
+def postProduccionCarne(data:produccionCarneBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = ProduccionCarne(id=data.id,
                                     anio=data.anio,
@@ -697,11 +741,11 @@ def postProduccionCarne(data:produccionCarneBModel):
 
 
 @app.put("/api/produccionCarne/{idData}")
-def putByIdProduccionCarne(data:produccionCarneBModel,idData:int = Path(default=1,ge=1,description="This is the ProduccionCarne ID",example=1)):
+def putByIdProduccionCarne(data:produccionCarneBModel,idData:int = Path(default=1,ge=1,description="This is the ProduccionCarne ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(ProduccionCarne).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.anio=data.anio
     queryResult.toneladas_eq_canal=data.toneladas_eq_canal
@@ -712,11 +756,11 @@ def putByIdProduccionCarne(data:produccionCarneBModel,idData:int = Path(default=
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/produccionCarne/{idData}")
-def deleteByIdProduccionCarne(idData:int = Path(default=None,ge=1,description="This is the ProduccionCarne ID",example=1)):
+def deleteByIdProduccionCarne(idData:int = Path(default=None,ge=1,description="This is the ProduccionCarne ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(ProduccionCarne).get(idData)
     if queryResult is None: 
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -740,7 +784,7 @@ def getByParametersProduccionAcopioLeche(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(ProduccionAcopioLeche).filter(ProduccionAcopioLeche.id.between(minLimit,maxLimit)).filter(ProduccionAcopioLeche.estado==True).all()
     db.close()
@@ -757,7 +801,7 @@ def getByIdProduccionAcopioLeche(idData:int = Path(default=1,ge=1,description="T
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/produccionAcopioLeche/")
-def postProduccionAcopioLeche(data:produccionAcopioLecheBModel):
+def postProduccionAcopioLeche(data:produccionAcopioLecheBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = ProduccionAcopioLeche(id=data.id,
                                     anio=data.anio,
@@ -772,11 +816,11 @@ def postProduccionAcopioLeche(data:produccionAcopioLecheBModel):
 
 
 @app.put("/api/produccionAcopioLeche/{idData}")
-def putByIdProduccionAcopioLeche(data:produccionAcopioLecheBModel,idData:int = Path(default=1,ge=1,description="This is the ProduccionAcopioLeche ID",example=1)):
+def putByIdProduccionAcopioLeche(data:produccionAcopioLecheBModel,idData:int = Path(default=1,ge=1,description="This is the ProduccionAcopioLeche ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(ProduccionAcopioLeche).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.anio=data.anio
     queryResult.produccion_millonesxlts=data.produccion_millonesxlts
@@ -788,11 +832,11 @@ def putByIdProduccionAcopioLeche(data:produccionAcopioLecheBModel,idData:int = P
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/produccionAcopioLeche/{idData}")
-def deleteByIdProduccionAcopioLeche(idData:int = Path(default=None,ge=1,description="This is the ProduccionAcopioLeche ID",example=1)):
+def deleteByIdProduccionAcopioLeche(idData:int = Path(default=None,ge=1,description="This is the ProduccionAcopioLeche ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(ProduccionAcopioLeche).get(idData)
     if queryResult is None: 
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -816,7 +860,7 @@ def getByParametersSacrificioMensualBovino(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(SacrificioMensualBovino).filter(SacrificioMensualBovino.id.between(minLimit,maxLimit)).filter(SacrificioMensualBovino.estado==True).all()
     db.close()
@@ -833,7 +877,7 @@ def getByIdSacrificioMensualBovino(idData:int = Path(default=1,ge=1,description=
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/sacrificioMensualBovino/")
-def postSacrificioMensualBovino(data:sacrificioMensualBovinoBModel):
+def postSacrificioMensualBovino(data:sacrificioMensualBovinoBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = SacrificioMensualBovino(id=data.id,
                                     fecha=data.fecha,
@@ -847,11 +891,11 @@ def postSacrificioMensualBovino(data:sacrificioMensualBovinoBModel):
 
 
 @app.put("/api/sacrificioMensualBovino/{idData}")
-def putByIdSacrificioMensualBovino(data:sacrificioMensualBovinoBModel,idData:int = Path(default=1,ge=1,description="This is the SacrificioMensualBovino ID",example=1)):
+def putByIdSacrificioMensualBovino(data:sacrificioMensualBovinoBModel,idData:int = Path(default=1,ge=1,description="This is the SacrificioMensualBovino ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(SacrificioMensualBovino).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.fecha=data.fecha
     queryResult.sacrificio=data.sacrificio
@@ -862,11 +906,11 @@ def putByIdSacrificioMensualBovino(data:sacrificioMensualBovinoBModel,idData:int
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/sacrificioMensualBovino/{idData}")
-def deleteByIdSacrificioMensualBovino(idData:int = Path(default=None,ge=1,description="This is the SacrificioMensualBovino ID",example=1)):
+def deleteByIdSacrificioMensualBovino(idData:int = Path(default=None,ge=1,description="This is the SacrificioMensualBovino ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(SacrificioMensualBovino).get(idData)
     if queryResult is None: 
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -890,7 +934,7 @@ def getByParametersHembrasEnSacrificio(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(HembrasEnSacrificio).filter(HembrasEnSacrificio.id.between(minLimit,maxLimit)).filter(HembrasEnSacrificio.estado==True).all()
     db.close()
@@ -907,7 +951,7 @@ def getByIdHembrasEnSacrificio(idData:int = Path(default=1,ge=1,description="Thi
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/hembrasEnSacrificio/")
-def postHembrasEnSacrificio(data:hembrasEnSacrificioBModel):
+def postHembrasEnSacrificio(data:hembrasEnSacrificioBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = HembrasEnSacrificio(id=data.id,
                                     fecha=data.fecha,
@@ -921,11 +965,11 @@ def postHembrasEnSacrificio(data:hembrasEnSacrificioBModel):
 
 
 @app.put("/api/hembrasEnSacrificio/{idData}")
-def putByIdHembrasEnSacrificio(data:hembrasEnSacrificioBModel,idData:int = Path(default=1,ge=1,description="This is the HembrasEnSacrificio ID",example=1)):
+def putByIdHembrasEnSacrificio(data:hembrasEnSacrificioBModel,idData:int = Path(default=1,ge=1,description="This is the HembrasEnSacrificio ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(HembrasEnSacrificio).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.fecha=data.fecha
     queryResult.porcentaje_de_hembras=data.porcentaje_de_hembras
@@ -936,11 +980,11 @@ def putByIdHembrasEnSacrificio(data:hembrasEnSacrificioBModel,idData:int = Path(
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/hembrasEnSacrificio/{idData}")
-def deleteByIdHembrasEnSacrificio(idData:int = Path(default=None,ge=1,description="This is the HembrasEnSacrificio ID",example=1)):
+def deleteByIdHembrasEnSacrificio(idData:int = Path(default=None,ge=1,description="This is the HembrasEnSacrificio ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(HembrasEnSacrificio).get(idData)
     if queryResult is None: 
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -964,7 +1008,7 @@ def getByParametersGanadoGordoEnpie(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(GanadoGordoEnpie).filter(GanadoGordoEnpie.id.between(minLimit,maxLimit)).filter(GanadoGordoEnpie.estado==True).all()
     db.close()
@@ -981,7 +1025,7 @@ def getByIdGanadoGordoEnpie(idData:int = Path(default=1,ge=1,description="This i
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/ganadoGordoEnpie/")
-def postGanadoGordoEnpie(data:ganadoGordoEnpieBModel):
+def postGanadoGordoEnpie(data:ganadoGordoEnpieBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = GanadoGordoEnpie(id=data.id,
                                     fecha=data.fecha,
@@ -995,11 +1039,11 @@ def postGanadoGordoEnpie(data:ganadoGordoEnpieBModel):
 
 
 @app.put("/api/ganadoGordoEnpie/{idData}")
-def putByIdGanadoGordoEnpie(data:ganadoGordoEnpieBModel,idData:int = Path(default=1,ge=1,description="This is the GanadoGordoEnpie ID",example=1)):
+def putByIdGanadoGordoEnpie(data:ganadoGordoEnpieBModel,idData:int = Path(default=1,ge=1,description="This is the GanadoGordoEnpie ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(GanadoGordoEnpie).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.fecha=data.fecha
     queryResult.precio_x_kilo=data.precio_x_kilo
@@ -1010,11 +1054,11 @@ def putByIdGanadoGordoEnpie(data:ganadoGordoEnpieBModel,idData:int = Path(defaul
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/ganadoGordoEnpie/{idData}")
-def deleteByIdGanadoGordoEnpie(idData:int = Path(default=None,ge=1,description="This is the GanadoGordoEnpie ID",example=1)):
+def deleteByIdGanadoGordoEnpie(idData:int = Path(default=None,ge=1,description="This is the GanadoGordoEnpie ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(GanadoGordoEnpie).get(idData)
     if queryResult is None: 
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -1038,7 +1082,7 @@ def getByParametersHembrasFlacaEnpie(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(HembrasFlacaEnpie).filter(HembrasFlacaEnpie.id.between(minLimit,maxLimit)).filter(HembrasFlacaEnpie.estado==True).all()
     db.close()
@@ -1055,7 +1099,7 @@ def getByIdHembrasFlacaEnpie(idData:int = Path(default=1,ge=1,description="This 
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/hembrasFlacaEnpie/")
-def postHembrasFlacaEnpie(data:hembrasFlacaEnpieBModel):
+def postHembrasFlacaEnpie(data:hembrasFlacaEnpieBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = HembrasFlacaEnpie(id=data.id,
                                     fecha=data.fecha,
@@ -1071,11 +1115,11 @@ def postHembrasFlacaEnpie(data:hembrasFlacaEnpieBModel):
 
 
 @app.put("/api/hembrasFlacaEnpie/{idData}")
-def putByIdHembrasFlacaEnpie(data:hembrasFlacaEnpieBModel,idData:int = Path(default=1,ge=1,description="This is the HembrasFlacaEnpie ID",example=1)):
+def putByIdHembrasFlacaEnpie(data:hembrasFlacaEnpieBModel,idData:int = Path(default=1,ge=1,description="This is the HembrasFlacaEnpie ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(HembrasFlacaEnpie).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.fecha=data.fecha
     queryResult.precio_region_caribe=data.precio_region_caribe
@@ -1088,11 +1132,11 @@ def putByIdHembrasFlacaEnpie(data:hembrasFlacaEnpieBModel,idData:int = Path(defa
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/hembrasFlacaEnpie/{idData}")
-def deleteByIdHembrasFlacaEnpie(idData:int = Path(default=None,ge=1,description="This is the HembrasFlacaEnpie ID",example=1)):
+def deleteByIdHembrasFlacaEnpie(idData:int = Path(default=None,ge=1,description="This is the HembrasFlacaEnpie ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(HembrasFlacaEnpie).get(idData)
     if queryResult is None: 
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)
@@ -1116,7 +1160,7 @@ def getByParametersMachoCebaGordopie(
         maxLimit:int= Query(default=2,ge=1, description="Limit Final")
     ):
     if (minLimit>maxLimit or minLimit==maxLimit):
-        raise HTTPException(status_code=500, detail="Initial limit can't be less or equal to final limit")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Initial limit can't be less or equal to final limit"))
     db = SessionLocal()
     queryResult = db.query(MachoCebaGordopie).filter(MachoCebaGordopie.id.between(minLimit,maxLimit)).filter(MachoCebaGordopie.estado==True).all()
     db.close()
@@ -1133,7 +1177,7 @@ def getByIdMachoCebaGordopie(idData:int = Path(default=1,ge=1,description="This 
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Request processed successfully")
 
 @app.post("/api/machoCebaGordopie/")
-def postMachoCebaGordopie(data:machoCebaGordopieBModel):
+def postMachoCebaGordopie(data:machoCebaGordopieBModel, currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     dataTarget = MachoCebaGordopie(id=data.id,
                                     fecha=data.fecha,
@@ -1149,11 +1193,11 @@ def postMachoCebaGordopie(data:machoCebaGordopieBModel):
 
 
 @app.put("/api/machoCebaGordopie/{idData}")
-def putByIdMachoCebaGordopie(data:machoCebaGordopieBModel,idData:int = Path(default=1,ge=1,description="This is the MachoCebaGordopie ID",example=1)):
+def putByIdMachoCebaGordopie(data:machoCebaGordopieBModel,idData:int = Path(default=1,ge=1,description="This is the MachoCebaGordopie ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(MachoCebaGordopie).get(idData)
     if queryResult is None:
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.fecha=data.fecha
     queryResult.precio_region_caribe=data.precio_region_caribe
@@ -1166,11 +1210,11 @@ def putByIdMachoCebaGordopie(data:machoCebaGordopieBModel,idData:int = Path(defa
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data updated successfully")
 
 @app.delete("/api/machoCebaGordopie/{idData}")
-def deleteByIdMachoCebaGordopie(idData:int = Path(default=None,ge=1,description="This is the MachoCebaGordopie ID",example=1)):
+def deleteByIdMachoCebaGordopie(idData:int = Path(default=None,ge=1,description="This is the MachoCebaGordopie ID",example=1), currentUser: str = Depends(getTokenData)):
     db = SessionLocal()
     queryResult = db.query(MachoCebaGordopie).get(idData)
     if queryResult is None: 
-        raise HTTPException(status_code=500, detail="Id out range")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.estado=False
     db.commit()
     db.refresh(queryResult)

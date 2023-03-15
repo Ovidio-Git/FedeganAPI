@@ -17,7 +17,15 @@ class TestAPI(unittest.TestCase):
         response = get(f'{HOST}/')
         self.assertEqual(response.status_code, 200)
 
-
+    ###### userToken ####################
+    def test_postToken(self):
+        JsonExample={
+                        "username": "lesterT",
+                        "password": "lester24"
+                    }
+        response = post(f'{HOST}/api/token/',json=JsonExample)
+        self.assertEqual(response.status_code, 200)
+        print(response.json())
 
     ###### produccionLecheSacrificio####################
     def test_getAllProduccionLecheSacrificio(self):
