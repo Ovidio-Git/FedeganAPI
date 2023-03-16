@@ -81,7 +81,7 @@ async def getTokenData(token: str = Depends(oauth2_scheme)):
 
 
 @app.get("/")
-def home()->str:
+def home():
     return jsonResponseStructure(status="success",code=200,message="Welcome to FedeganAPI")
 
 @app.post("/api/registrarUser/")
@@ -209,9 +209,8 @@ def deleteByIdProduccionLecheSacrificio(idData:int = Path(default=None,ge=1,desc
     queryResult = db.query(ProduccionLecheSacrificio).get(idData)
     if queryResult is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -285,9 +284,8 @@ def deleteByIdPrecioUSDnovilloGordopie(idData:int = Path(default=None,ge=1,descr
     queryResult = db.query(PrecioUSDnovilloGordopie).get(idData)
     if queryResult is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -377,9 +375,8 @@ def deleteByIdPrecioLecheCrudaUSDxL(idData:int = Path(default=None,ge=1,descript
     queryResult = db.query(PrecioLecheCrudaUSDxL).get(idData)
     if queryResult is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -453,9 +450,8 @@ def deleteByIdCostosproduccion(idData:int = Path(default=None,ge=1,description="
     queryResult = db.query(Costosproduccion).get(idData)
     if queryResult is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -537,9 +533,8 @@ def deleteByIdConsumosAnualCarne(idData:int = Path(default=None,ge=1,description
     queryResult = db.query(ConsumosAnualCarne).get(idData)
     if queryResult is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -581,7 +576,7 @@ def postConsumosAnualesLeche(data:consumosAnualesLecheBModel, currentUser: str =
     db = SessionLocal()
     dataTarget = ConsumosAnualesLeche(id=data.id,
                                     anio=data.anio,
-                                    leche_ltxhab=data.consumo_proteina_animal,
+                                    leche_ltxhab=data.leche_ltxhab,
                                     estado=data.estado)
     db.add(dataTarget)
     db.commit()
@@ -598,7 +593,7 @@ def putByIdConsumosAnualesLeche(data:consumosAnualesLecheBModel,idData:int = Pat
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
     queryResult.id=data.id
     queryResult.anio=data.anio
-    queryResult.leche_ltxhab=data.consumo_proteina_animal
+    queryResult.leche_ltxhab=data.leche_ltxhab
     queryResult.estado=data.estado
     db.commit()
     db.refresh(queryResult)
@@ -611,9 +606,8 @@ def deleteByIdConsumosAnualesLeche(idData:int = Path(default=None,ge=1,descripti
     queryResult = db.query(ConsumosAnualesLeche).get(idData)
     if queryResult is None: 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -687,9 +681,8 @@ def deleteByIdLitroLechepagado(idData:int = Path(default=None,ge=1,description="
     queryResult = db.query(LitroLechepagado).get(idData)
     if queryResult is None: 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -761,9 +754,8 @@ def deleteByIdProduccionCarne(idData:int = Path(default=None,ge=1,description="T
     queryResult = db.query(ProduccionCarne).get(idData)
     if queryResult is None: 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -837,9 +829,8 @@ def deleteByIdProduccionAcopioLeche(idData:int = Path(default=None,ge=1,descript
     queryResult = db.query(ProduccionAcopioLeche).get(idData)
     if queryResult is None: 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -911,9 +902,8 @@ def deleteByIdSacrificioMensualBovino(idData:int = Path(default=None,ge=1,descri
     queryResult = db.query(SacrificioMensualBovino).get(idData)
     if queryResult is None: 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -985,9 +975,8 @@ def deleteByIdHembrasEnSacrificio(idData:int = Path(default=None,ge=1,descriptio
     queryResult = db.query(HembrasEnSacrificio).get(idData)
     if queryResult is None: 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -1059,9 +1048,8 @@ def deleteByIdGanadoGordoEnpie(idData:int = Path(default=None,ge=1,description="
     queryResult = db.query(GanadoGordoEnpie).get(idData)
     if queryResult is None: 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -1104,7 +1092,7 @@ def postHembrasFlacaEnpie(data:hembrasFlacaEnpieBModel, currentUser: str = Depen
     dataTarget = HembrasFlacaEnpie(id=data.id,
                                     fecha=data.fecha,
                                     precio_region_caribe=data.precio_region_caribe,
-                                    precio_magdalena_medio=data.precio_magdalena_medio,
+                                    precio_magdalena_medio_santanderes=data.precio_magdalena_medio_santanderes,
                                     precio_llanos_orientales=data.precio_llanos_orientales,
                                     estado=data.estado)
     db.add(dataTarget)
@@ -1137,9 +1125,8 @@ def deleteByIdHembrasFlacaEnpie(idData:int = Path(default=None,ge=1,description=
     queryResult = db.query(HembrasFlacaEnpie).get(idData)
     if queryResult is None: 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
@@ -1215,9 +1202,8 @@ def deleteByIdMachoCebaGordopie(idData:int = Path(default=None,ge=1,description=
     queryResult = db.query(MachoCebaGordopie).get(idData)
     if queryResult is None: 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,detail=jsonResponseStructure(status="error",code=500,message="Id out range"))
-    queryResult.estado=False
+    db.delete(queryResult)
     db.commit()
-    db.refresh(queryResult)
     db.close()
     return jsonResponseStructure(status="success",code=200,data=queryResult,message="Data deleted successfully")
 
