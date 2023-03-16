@@ -25,9 +25,16 @@ jobs:
         docker restart App_v2
         docker-compose logs app
     -
-      name: run python tests
-      run: |
-        cd app/
-        ls
-        pip freeze
-        pytest
+     name: run test with pytest
+     run: |
+       pip install --no-cache-dir --upgrade -r requirements.txt
+       cd app/
+       pip isntall pytest-html
+       python -m pytest --html=/testResults/htmlreport.html
+ 
+    - 
+      name: Upload test details
+      uses: actions/upload-artifact@v2
+      with:
+        name: ReportTest
+        path: ./testResults
