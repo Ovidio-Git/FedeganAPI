@@ -31,4 +31,6 @@ jobs:
       name: run tests with pytest in container
       run: |
         cd app/
+        ls
+        pip list
         python -m pytest
