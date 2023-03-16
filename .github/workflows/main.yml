@@ -27,6 +27,7 @@ jobs:
     -
      name: run test with pytest
      run: |
+       docker ps
        docker-compose logs db
        pip install --no-cache-dir --upgrade -r requirements.txt
        cd app/
