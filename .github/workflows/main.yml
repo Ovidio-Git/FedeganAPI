@@ -27,10 +27,11 @@ jobs:
     -
      name: run test with pytest
      run: |
+       ls
        pip install --no-cache-dir --upgrade -r requirements.txt
        cd app/
        pip install pytest-html
-       python -m pytest --html=/testResults/htmlreport.html
+       python -m pytest --html=../testResults/htmlreport.html
  
     - 
       name: Upload test details
