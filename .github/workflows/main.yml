@@ -29,7 +29,7 @@ jobs:
      run: |
        pip install --no-cache-dir --upgrade -r requirements.txt
        cd app/
-       pip isntall pytest-html
+       pip install pytest-html
        python -m pytest --html=/testResults/htmlreport.html
  
     - 
