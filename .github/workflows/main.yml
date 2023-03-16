@@ -25,9 +25,9 @@ jobs:
         docker restart App_v2
         docker-compose logs app
     -
-      name: run python tests
+      name: run tests with pytest
       run: |
         cd app/
         ls
-        pip freeze
-        pytest
+        pip install pytest pytest-cov
+        python -m pytest
