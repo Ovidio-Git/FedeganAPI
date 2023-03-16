@@ -26,7 +26,7 @@ jobs:
         docker-compose logs app
     -
      name: Enter container
-     run: sudo docker exec -t App_v2 bash
+     run: sudo docker exec -i App_v2 bash
     -
       name: run tests with pytest in container
       run: |
