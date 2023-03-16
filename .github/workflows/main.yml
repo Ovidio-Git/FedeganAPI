@@ -27,7 +27,6 @@ jobs:
     -
       name: run tests with pytest
       run: |
+        docker exec -it App_v2 /bin/sh
         cd app/
-        ls
-        pip install pytest pytest-cov
         python -m pytest
