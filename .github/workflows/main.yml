@@ -25,12 +25,10 @@ jobs:
         docker restart App_v2
         docker-compose logs app
     -
-     name: Enter container
-     run: sudo docker exec -i App_v2 bash
-    -
-      name: run tests with pytest in container
-      run: |
-        cd app/
-        ls
-        pip list
-        python -m pytest
+     name: Enter container and run test
+     run: |
+       sudo docker exec -i App_v2 bash
+       ls
+       cd app/
+       ls
+       python -m pytest
