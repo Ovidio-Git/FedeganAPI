@@ -26,4 +26,8 @@ jobs:
         docker-compose logs app
     -
       name: run python tests
-      run: pytest
+      run: |
+        cd app/
+        ls
+        pip freeze
+        pytest
