@@ -28,7 +28,7 @@ jobs:
      name: Enter container and run test
      run: |
        sudo docker exec -i App_v2 bash
-       ls
+       pip install --no-cache-dir --upgrade -r requirements.txt
        cd app/
-       ls
+       pip list
        python -m pytest
