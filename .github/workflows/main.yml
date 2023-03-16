@@ -26,4 +26,4 @@ jobs:
         docker-compose logs app
     -
       name: run python tests
-      uses: pytest
+      run: pytest
