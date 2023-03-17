@@ -43,13 +43,13 @@ jobs:
         cd app/
         docker ps
         python -m pytest --html=../testResults/htmlreport.html --maxfail=3
+        ls
+        cd ..
+        ls
     - 
       name: Upload test details
       uses: actions/upload-artifact@v2
       with:
         name: ReportTest
         run: |
-          ls
-          cd ..
-          ls
-        path: ../testResults
+        path: ./testResults
