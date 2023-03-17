@@ -5,7 +5,7 @@ services:
   app:
     build: .
     restart: always
-    container_name: App_v2
+    container_name: App_v1
     depends_on:
       - db
     volumes:
@@ -35,14 +35,18 @@ services:
         ipv4_address: 10.5.0.6
   
   pgadmin:
-    container_name: pgadmin4
     image: dpage/pgadmin4
     restart: always
+    container_name: pgadmin_v4
+    depends_on:
+      - db
+    volumes:
+      - ./dataDB/Backup:/var/lib/pgadmin/storage/admin_admin.com
+    ports:
+      - "5050:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: root
-    ports:
-      - "5050:80"
     networks:
       dbconnection:
         ipv4_address: 10.5.0.7
