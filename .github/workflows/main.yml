@@ -39,10 +39,10 @@ jobs:
     -
       name: Show container logs
       run: |
-        sudo docker ps
         docker restart App_v1
-        docker-compose logs app
+        sudo docker ps
         docker-compose logs db
+        docker-compose logs app
     -
      name: run test with pytest
      run: |
