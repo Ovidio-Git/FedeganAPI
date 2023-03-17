@@ -13,7 +13,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
+      - DATABASE_URL=postgresql://root:passwordRoot@db:5432/fedeganDB
     networks:
       dbconnection:
         ipv4_address: 10.5.0.5
