@@ -22,7 +22,7 @@ jobs:
     -
       name: Show container logs
       run: |
-        docker restart db
+        docker restart PostgreSQL_v15
         docker restart App_v2
         docker-compose logs app
         docker-compose logs db
