@@ -33,14 +33,16 @@ jobs:
         docker-compose logs db
         docker-compose logs app
     -
-     name: requirements
-     run: pip install -r requirements.txt
+      name: Requirements
+      run: |
+        pip list
+        pip install -r requirements.txt
     - 
-     name: run test with pytest
-     run: |
-       cd app/
-       docker ps
-       python -m pytest --html=../testResults/htmlreport.html --maxfail=3
+      name: run test with pytest
+      run: |
+        cd app/
+        docker ps
+        python -m pytest --html=../testResults/htmlreport.html --maxfail=3
     - 
       name: Upload test details
       uses: actions/upload-artifact@v2
