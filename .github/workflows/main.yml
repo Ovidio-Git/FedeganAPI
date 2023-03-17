@@ -48,4 +48,8 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ReportTest
+        run: |
+          ls
+          cd ..
+          ls
         path: ../testResults
