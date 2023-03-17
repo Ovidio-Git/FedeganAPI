@@ -18,12 +18,10 @@ jobs:
       run: |
         sudo docker-compose build
         sudo docker-compose up -d
-        sudo docker ps
     -
       name: Show container logs
       run: |
-        docker restart PostgreSQL_v15
-        docker restart App_v2
+        sudo docker ps
         docker-compose logs app
         docker-compose logs db
     -
