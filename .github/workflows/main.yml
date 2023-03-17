@@ -17,25 +17,14 @@ jobs:
       name: Running docker container
       run: |
         cd dataDB/Volumen
-        mkdir pg_commit_ts
-        mkdir pg_dynshmem
-        mkdir pg_notify
-        mkdir pg_replslot
-        mkdir pg_serial
-        mkdir pg_snapshots
-        mkdir pg_stat
-        mkdir pg_stat_tmp
-        mkdir pg_tblspc
-        mkdir pg_twophase
+        mkdir pg_commit_ts pg_dynshmem pg_notify pg_replslot pg_twophase pg_serial pg_snapshots pg_stat pg_stat_tmp pg_tblspc
         cd pg_logical
-        mkdir mappings
-        mkdir snapshots
+        mkdir mappings snapshots
         cd ..
         cd pg_wal
         mkdir archive_status
         cd ../../..
-        sudo docker-compose build
-        sudo docker-compose up -d
+        sudo docker-compose up --build -d
     -
       name: Show container logs
       run: |
@@ -44,12 +33,13 @@ jobs:
         docker-compose logs db
         docker-compose logs app
     -
+     name: requirements
+     run: pip install -r requirements.txt
+    - 
      name: run test with pytest
      run: |
-       docker ps
-       pip install --no-cache-dir --upgrade -r requirements.txt
        cd app/
-       pip install pytest-html
+       docker ps
        python -m pytest --html=../testResults/htmlreport.html --maxfail=3
     - 
       name: Upload test details
