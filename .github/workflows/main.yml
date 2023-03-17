@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     -
-      name: Checkout Repository
+      name: Step 1/6 -> Checkout Repository
       uses: actions/checkout@master
     - 
-      name: Running docker container
+      name: Step 2/6 -> Running docker container
       run: |
         cd dataDB/Volumen
         mkdir pg_commit_ts pg_dynshmem pg_notify pg_replslot pg_twophase pg_serial pg_snapshots pg_stat pg_stat_tmp pg_tblspc
@@ -26,28 +26,25 @@ jobs:
         cd ../../..
         sudo docker-compose up --build -d
     -
-      name: Show container logs
+      name: Step 3/6 -> Show container logs
       run: |
         docker restart App_v1
         sudo docker ps
         docker-compose logs db
         docker-compose logs app
     -
-      name: Requirements
+      name: Step 4/6 -> Requirements
       run: |
         pip list
         pip install -r requirements.txt
     - 
-      name: run test with pytest
+      name: Step 5/6 -> run test with pytest
       run: |
         cd app/
         docker ps
         python -m pytest --html=../testResults/htmlreport.html --maxfail=3
-        ls
-        cd ..
-        ls
     - 
-      name: Upload test details
+      name: Step 6/6 -> Upload test details
       uses: actions/upload-artifact@v2
       with:
         name: ReportTest
