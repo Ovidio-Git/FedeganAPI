@@ -27,7 +27,13 @@ jobs:
         mkdir pg_stat_tmp
         mkdir pg_tblspc
         mkdir pg_twophase
-        cd ../..
+        cd pg_logical
+        mkdir mappings
+        mkdir snapshots
+        cd ..
+        cd pg_wal
+        mkdir archive_status
+        cd ../../..
         sudo docker-compose build
         sudo docker-compose up -d
     -
