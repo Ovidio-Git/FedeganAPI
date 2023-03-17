@@ -27,14 +27,15 @@ jobs:
     -
      name: run test with pytest
      run: |
+       docker ps
+       docker-compose logs db
        pip install --no-cache-dir --upgrade -r requirements.txt
        cd app/
-       pip isntall pytest-html
-       python -m pytest --html=/testResults/htmlreport.html
- 
+       pip install pytest-html
+       python -m pytest --html=../testResults/htmlreport.html --maxfail=3
     - 
       name: Upload test details
       uses: actions/upload-artifact@v2
       with:
         name: ReportTest
-        path: ./testResults
+        path: ../testResults
