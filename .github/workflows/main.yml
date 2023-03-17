@@ -16,6 +16,7 @@ jobs:
     - 
       name: Running docker container
       run: |
+        ls
         sudo docker-compose build
         sudo docker-compose up -d
     -
