@@ -22,13 +22,14 @@ jobs:
     -
       name: Show container logs
       run: |
+        docker restart db
         docker restart App_v2
         docker-compose logs app
+        docker-compose logs db
     -
      name: run test with pytest
      run: |
        docker ps
-       docker-compose logs db
        pip install --no-cache-dir --upgrade -r requirements.txt
        cd app/
        pip install pytest-html
